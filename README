@@ -1,0 +1,6 @@
+Converts mediainfo chapter marks to chapter text files usable for mkvmerge.
+Completes eac3to chapter text files with chapter names.
+
+Cannot handle xml chapter files.
+Cannot handle vtt chapter files.
+
