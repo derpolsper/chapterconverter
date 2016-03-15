@@ -3,12 +3,30 @@
 # generate chapter files usable in mkvmerge
 # from incomplete or incompatable files
 #
-# usage:	$0 $1 $2
-# 			scriptname chapterold chapternew
+# usage:
+# $0 $1 $2
+# or, in case of spaces in file names:
+# scriptname "chapter old" 'chapter new'
 #
 
 # begin reading $chapterold with first line: 0
 linenumber=0
+
+# $3 indicates filenames with spaces
+if [[ $3 ]]; then
+	echo ""
+	echo "looks like you chose a file name with spaces."
+	echo "either avoid spaces or (double) quote:"
+	echo "\"file name\" or 'file name'"
+	echo ""
+	echo "now, no quotes neccessary"
+
+	echo "file with chapter information"
+	read -e -p "> " chapterold
+
+	echo "new chapter file"
+	read -e -p "> " chapternew
+fi
 
 # either use $1 $2 for old and new chapter file name or ask for them
 if [[ -z $1 ]]; then
@@ -47,11 +65,12 @@ if [[ -e $chapternew ]]; then
                 ;;
 
 			y|Y) # $chapternew will be overwritten
-				> $chapternew
+				> "$chapternew"
 				;;
 
 			*)
-				echo "nah! silly answer. begin again."
+				echo "nah! not the best answer. begin again."
+				exit
 				;;
 		esac
 fi
