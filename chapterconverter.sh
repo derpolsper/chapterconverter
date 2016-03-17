@@ -54,34 +54,33 @@ done
 # check if $chapternew exists
 if [[ -e $chapternew ]]; then
 	echo "$chapternew already exists. Overwrite?"
-	read -e -p "y|n > " overwrite
-	
-		case $overwrite in
-			n|N) #
-				until [[ ! -e $chapternew ]]; do
-					echo "new chapter file"
-					read -e -p "> " chapternew
-				done
-                ;;
+	# go on when suitable answer is given
+	until [[ $overwrite == n || $overwrite == N || $overwrite == y || $overwrite == Y ]]; do
+		read -e -p "y|n > " overwrite
+			case $overwrite in
+				n|N) #
+					until [[ ! -e $chapternew ]]; do
+						echo "new chapter file"
+						read -e -p "> " chapternew
+					done
+					;;
 
-			y|Y) # $chapternew will be overwritten
-				> "$chapternew"
-				;;
-
-			*)
-				echo "nah! not the best answer. begin again."
-				exit
-				;;
-		esac
+				y|Y) # $chapternew will be overwritten
+					> "$chapternew"
+					;;
+			esac
+	done
 fi
 
 # if generated in windows or using windows tools in wine,
 # removal of DOS style carriage return necessary
+# avoid any change in the original $chapterold
+cp "$chapterold" "$chapterold"-temp
+chapterold="$chapterold"-temp
 sed -i 's/\r//' "$chapterold"
 
 # files from eac3to lack chapter names, file begins with CHAPTER
 if [[ -n $(cat $chapterold | head -n 1 | grep -e ^CHAPTER) ]]; then
-	echo "from eac3to"
 	
 	# delete lines ending with "NAME=" or "NAME=" and white
 	# space from $chapterold
@@ -108,7 +107,6 @@ if [[ -n $(cat $chapterold | head -n 1 | grep -e ^00:00:00.000) ]]; then
 	# if no chapter name is given, first line also ends with
 	# this time code
 	if [[ -n $(cat $chapterold | head -n 1 | grep -e 00:00:00.000$) ]]; then
-		echo "mediainfo without names"
 		# read $chapterold line by line
 		cat "$chapterold" | while read LINE; do
 
@@ -127,7 +125,6 @@ if [[ -n $(cat $chapterold | head -n 1 | grep -e ^00:00:00.000) ]]; then
 		done
 	else # assume, no time code at end of line means chapter name given
 		# read $chapterold line by line
-		echo "mediainfo with names"
 		cat "$chapterold" | while read LINE; do
 
 			# count linenumbers
@@ -153,4 +150,6 @@ fi
 	# do something
 #fi
 
+# delete the original's copy
+sleep 10 && rm "$chapterold"
 exit
