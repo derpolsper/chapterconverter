@@ -115,10 +115,8 @@ sed -i '$s/$/\n\n\n\n\n/g' "$chapterold1"
 # webvtt has to have WEBVTT in line 1
 if [[ -n $(cat $chapterold1 | head -n 1 | grep -e WEBVTT) ]]; then
 	webvtt_check=0
-	echo "webvtt $webvtt_check"
 else
 	webvtt_check=1
-	echo "else webvtt $webvtt_check"
 fi
 }
 
@@ -130,7 +128,6 @@ while read LINE; do
 	# break if $LINE contains ' : ', like mediainfo_w_names or mediainfo_wo_names
 	if [[ $(echo "$LINE" | grep ' : ') ]]; then
 		mp4_check=2
-		echo "mp4 $mp4_check"
 		break
 	fi
 	# break if $LINE does not start with $timecode, does not end with $regex
@@ -140,10 +137,8 @@ while read LINE; do
 	[[ $(echo "$LINE"|cut -d' ' -f1) != $(echo "$LINE"|cut -d' ' -f2-) ]] || \
  	[[ -z $LINE ]]; then
 		mp4_check=0
-		echo "mp4 $mp4_check"
 	else 
 		mp4_check=2
-		echo "else mp4 $mp4_check"
 		break
 	fi
 done < "$chapterold1"
@@ -155,21 +150,17 @@ while read LINE; do
 	## break if non-empty $LINE does not begin with CHAPTER
 	if [[ -n $(echo "$LINE"|grep -E '^CHAPTER') ]] || [[ -z $LINE ]]; then
 		eac3to_check=0
-		echo "chapter eac3to $eac3to_check"
 	else
 		eac3to_check=4
-		echo "else chapter eac3to $eac3to_check"
 		break
  	fi
 	# break if non-empty $LINE does not end with $timecode or not with 'NAME='
  	if
 	[[ $(echo "$LINE"|cut -d'=' -f2) =~ $tc$ ]] || [[ $(echo "$LINE") =~ NAME=$ ]] || [[ -z $LINE ]]; then
 		eac3to_check=0
-		echo "tc/name eac3to $eac3to_check"
 	else
 		echo "$LINE"
 		eac3to_check=4
-		echo "else tc/name chapter eac3to $eac3to_check"
 		break
 	fi
 done < "$chapterold1"
@@ -185,10 +176,8 @@ while read LINE; do
 	[[ $(echo "$LINE"|cut -d' ' -f1) == $(echo "$LINE"|cut -d':' -f5-) ]] || \
 	[[ -z $LINE ]]; then
 		mediainfo_wo_names_check=0
-		echo "mediainfo_wo_names_check $mediainfo_wo_names_check"
 	else
 		mediainfo_wo_names_check=8
-		echo "else mediainfo_wo_names_check $mediainfo_wo_names_check"
 		break
 	fi
 done < "$chapterold1"
@@ -206,10 +195,8 @@ while read LINE; do
 	[[ $(echo "$LINE"|cut -d':' -f5) =~ ^[[:print:]]*$ ]] || \
  	[[ -z $LINE ]]; then
 		mediainfo_w_names_a_lang_check=0
-		echo "mediainfo_w_names_a_lang_check $mediainfo_w_names_a_lang_check"
 	else
 		mediainfo_w_names_a_lang_check=16
-		echo "else mediainfo_w_names_a_lang_check $mediainfo_w_names_a_lang_check"
 		break
 	fi
 done < "$chapterold1"
@@ -227,10 +214,8 @@ while read LINE; do
 	[[ -z $(echo "$LINE"|cut -d':' -f5) ]] || \
  	[[ -z $LINE ]]; then
 		mediainfo_w_names_wo_lang_check=0
-		echo "mediainfo_w_names_wo_lang_check $mediainfo_w_names_wo_lang_check"
 	else
 		mediainfo_w_names_wo_lang_check=32
-		echo "else mediainfo_w_names_wo_lang_check $mediainfo_w_names_wo_lang_check"
 		break
 	fi
 done < "$chapterold1"
@@ -381,45 +366,29 @@ mediainfo_w_names_wo_lang_detect
 ### execute conversion
 ###
 
-echo ""
-echo "zero executes:"
-echo "webvtt_check $webvtt_check"
-echo "mp4_check $mp4_check"
-echo "eac3to_check $eac3to_check"
-echo "mediainfo_wo_names_check $mediainfo_wo_names_check"
-echo "mediainfo_w_names_a_lang_check $mediainfo_w_names_a_lang_check"
-echo "mediainfo_w_names_wo_lang_check $mediainfo_w_names_wo_lang_check"
-echo ""
-
 # webvtt
 if [[ $webvtt_check -eq 0 ]]; then
 	webvtt_convert
-	echo "webvtt_convert"
 
 # mp4
 elif [[ $mp4_check -eq 0 ]]; then
 	mp4_convert
-	echo "mp4_convert"
 
 # eac3to
 elif [[ $eac3to_check -eq 0 ]]; then
 	eac3to_convert
-	echo "eac3to_convert"
 
 # mediainfo_wo_names
 elif [[ $mediainfo_wo_names_check -eq 0 ]]; then
 	mediainfo_wo_names_convert
-	echo "mediainfo_wo_names_convert"
 
 # mediainfo_w_names_a_lang
 elif [[ $mediainfo_w_names_a_lang_check -eq 0 ]]; then
 	mediainfo_w_names_a_lang_convert
-	echo "mediainfo_w_names_a_lang_convert"
 
 # mediainfo_w_names_wo_lang
 elif [[ $mediainfo_w_names_wo_lang_check -eq 0 ]]; then
 	mediainfo_w_names_wo_lang_convert
-	echo "mediainfo_w_names_wo_lang_convert"
 
 # none of the above
 elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo eac3to_check) -gt 0 && $(echo $mediainfo_wo_names_check) -gt 0 && $(echo $mediainfo_w_names_a_lang_check) -gt 0 && $(echo $mediainfo_w_names_wo_lang_check) -gt 0 ]]; then
@@ -429,8 +398,9 @@ elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo eac3to
 	echo "please PM @derpolsper and send your chapter file and error code. thanks!"
 else
 	echo "huh? surprise."
+	echo "please PM @derpolsper and send your chapter file. thanks!"
 fi
 
 # delete the original's copy
-#rm "$chapterold1"
+rm "$chapterold1"
 exit
