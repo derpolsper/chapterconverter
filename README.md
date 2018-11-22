@@ -1,4 +1,4 @@
-## Shell script converting several chapter mark formats into ogg text format[0], usable for mkvmerge.
+### Shell script converting several chapter mark formats into ogg text format[0], usable for mkvmerge.
 
 + Converts mediainfo chapter marks, with or without language indicator, preserving existing chapter names, else naming them.
 + Completes eac3to chapter text files with chapter names.
@@ -7,4 +7,5 @@
 
 
 [0] https://wiki.xiph.org/Chapter_Extension
+
 [1] https://w3c.github.io/webvtt/#webvtt-file-using-chapter-title-text
