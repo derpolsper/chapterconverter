@@ -7,7 +7,6 @@
 # $0 $1 $2
 # or, in case of spaces in file names:
 # scriptname "chapter old" 'chapter new'
-#
 
 # any time code regex
 tc="[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]"
@@ -22,26 +21,23 @@ overwrite=""
 webvtt_check=""
 mp4_check=""
 eac3to_check=""
-mediainfo_wo_names_check=""
-mediainfo_w_names_a_lang_check=""
-mediainfo_w_names_wo_lang_check=""
+mediainfo_wo_named_chapters_check=""
+mediainfo_w_names_w_lang_ind_check=""
+mediainfo_w_names_wo_lang_ind_check=""
 
 # $3 indicates filenames with spaces
 if [[ $3 ]]; then
-	echo ""
-	echo "looks like you chose a file name with spaces."
+	echo -e "\nlooks like you chose a file name with spaces."
 	echo "either avoid spaces or (double) quote:"
-	echo "\"file name\" or 'file name'"
-	echo ""
-	echo "now, no quotes neccessary"
+	echo -e "\"file name\" or 'file name'\n"
+	echo -e "now, no quotes neccessary\n"
 
 	until [[ -e $chapterold ]]; do
 		echo "input file with chapter information"
 		read -e -p "> " chapterold
 	done
 	until [[ $chapternew =~ [A-Za-z0-9] ]]; do
-		echo
-		echo "input new chapter file"
+		echo -e "\ninput new chapter file"
 		read -e -p "> " chapternew
 	done
 fi
@@ -53,31 +49,31 @@ if [[ -e $1 ]] && [[ $2 =~ [A-Za-z0-9] ]]; then
 	chapternew=$2
 elif [[ ! -e $1 ]]; then
 	until [[ -e $chapterold ]]; do
-		echo "input file with chapter information"
+		echo -e "\ninput file with chapter information"
 		read -e -p "> " chapterold
 	done
 	until [[ $chapternew =~ [A-Za-z0-9] ]]; do
-		echo "input new chapter file"
+		echo -e "\ninput new chapter file"
 		read -e -p "> " chapternew
 	done
 elif [[ -z $2 ]]; then
 	chapterold=$1
 	until [[ $chapternew =~ [A-Za-z0-9] ]]; do
-		echo "input new chapter file"
+		echo -e "\ninput new chapter file"
 		read -e -p "> " chapternew
 	done
 fi
 
 # check if $chapternew exists
 if [[ -e $chapternew ]]; then
-	echo "$chapternew already exists. Overwrite?"
+	echo -e "\n$chapternew already exists. Overwrite?"
 	# go on when suitable answer is given
 	until [[ $overwrite == @(n|N|y|Y) ]]; do
 		read -e -p "y|n > " overwrite
 			case $overwrite in
 				n|N)
 					until [[ ! -e $chapternew ]]; do
-						echo "new chapter file"
+						echo -e "\nnew chapter file"
 						read -e -p "> " chapternew
 					done
 					;;
@@ -93,7 +89,6 @@ fi
 # removal of DOS style carriage return necessary
 # avoid any change in the original $chapterold
 # and avoid race conditions by "unique" *cough* naming with unix time
-#echo "$chapterold $chapternew"
 cp "$chapterold" "$chapterold"-$(date +%Y%j%H%m)
 chapterold1="$chapterold-$(date +%Y%j%H%m)"
 sed -i 's/\r//' "$chapterold1"
@@ -104,15 +99,16 @@ set -e
 set -u
 set -o pipefail
 
-###
-### detect category of chapter mark files
-###
+### detect chapter mark files
 
 function webvtt_detect {
-# append new lines to the end of $chapterold
-# in case, last chapter name shorter than head -n x
-sed -i '$s/$/\n\n\n\n\n/g' "$chapterold1"
-# webvtt has to have WEBVTT in line 1
+# webvtt has to have WEBVTT in line 1:
+# WEBVTT FILE
+#
+# 1
+# 00:00:01.000 --> 00:00:05.000
+# Prologue
+
 if [[ -n $(cat $chapterold1 | head -n 1 | grep -e WEBVTT) ]]; then
 	webvtt_check=0
 else
@@ -121,11 +117,13 @@ fi
 }
 
 function mp4_detect {
-# mp4 chapter files contain only
-# time code <space> chapter name, like in
+# mp4 chapter files contain only time code <space> chapter name
+# without spaces around the colons, like in
 # 00:00:00.000 Prologue
+# 00:00:19.987 Chapter 02
+
 while read LINE; do
-	# break if $LINE contains ' : ', like mediainfo_w_names or mediainfo_wo_names
+	# break if $LINE contains ' : ', like mediainfo_w_names_wo_lang_ind or mediainfo_wo_named_chapters
 	if [[ $(echo "$LINE" | grep ' : ') ]]; then
 		mp4_check=2
 		break
@@ -146,6 +144,12 @@ done < "$chapterold1"
 
 function eac3to_detect {
 # files from eac3to lack chapter names, file begins with CHAPTER
+# like in:
+# CHAPTER01=00:00:00.000
+# CHAPTER01NAME=
+# CHAPTER02=00:08:52.490
+# CHAPTER02NAME=
+
 while read LINE; do
 	## break if non-empty $LINE does not begin with CHAPTER
 	if [[ -n $(echo "$LINE"|grep -E '^CHAPTER') ]] || [[ -z $LINE ]]; then
@@ -166,72 +170,80 @@ while read LINE; do
 done < "$chapterold1"
 }
 
-function mediainfo_wo_names_detect {
+function mediainfo_wo_named_chapters_detect {
 # each line from mediainfo chapter mark without chapter names
-# begins and ends with a time code
+# begins and ends with a time code:
+# 00:00:00.000 : en:00:00:00.000
+# 00:02:29.149 : en:00:02:29.149
+
 # no time code at end of line is interpreted as chapter name given
 while read LINE; do
 	# break if non-empty $LINE does not begin with tc and does not end with tc
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
 	[[ $(echo "$LINE"|cut -d' ' -f1) == $(echo "$LINE"|cut -d':' -f5-) ]] || \
 	[[ -z $LINE ]]; then
-		mediainfo_wo_names_check=0
+		mediainfo_wo_named_chapters_check=0
 	else
-		mediainfo_wo_names_check=8
+		mediainfo_wo_named_chapters_check=8
 		break
 	fi
 done < "$chapterold1"
 }
 
-function mediainfo_w_names_a_lang_detect {
+function mediainfo_w_names_w_lang_ind_detect {
 # each line from mediainfo chapter mark with chapter names and language
-# begins with a time code an ends with some not-time code
+# indicator begins with a time code and ends with some not-time code:
+# 00:00:00.000 : en:01. Imperial Orders
+# 00:08:57.454 : en:02. Family Ambitions
+
 # no time code at end of line is interpreted as chapter name given
 while read LINE; do
 	# break, if $LINE does not begin with tc, does not contain space and 
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
 	[[ $(echo "$LINE"|cut -d':' -f5-) != ^$tc$ ]] && \
-	[[ $(echo "$LINE"|cut -d':' -f4) =~ ^[[:space:]]*[a-z][a-z]$ ]] && \
+	[[ $(echo "$LINE"|cut -d' ' -f3|cut -d ':' -f1) =~ ^[a-z][a-z]$ ]] && \
 	[[ $(echo "$LINE"|cut -d':' -f5) =~ ^[[:print:]]*$ ]] || \
  	[[ -z $LINE ]]; then
-		mediainfo_w_names_a_lang_check=0
+		mediainfo_w_names_w_lang_ind_check=0
 	else
-		mediainfo_w_names_a_lang_check=16
+		mediainfo_w_names_w_lang_ind_check=16
 		break
 	fi
 done < "$chapterold1"
 }
 
-function mediainfo_w_names_wo_lang_detect {
-# each line from mediainfo chapter mark with chapter names and language
-# begins with a time code an ends with some not-time code
-# no time code at end of line is interpreted as chapter name given
+function mediainfo_w_names_wo_lang_ind_detect {
+# each line from mediainfo chapter mark with chapter names but without language
+# indicator begins with a time code an ends with some not-time code at end of line,
+# which is interpreted as chapter name given, like:
+# 00:00:00.000 : :Opening Credits
+# 00:08:17.497 : :Skyway Motel
+# 00:12:44.514 : :New York City
+
 while read LINE; do
 	# break, if $LINE does not begin with tc, does not contain space and 
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
-	[[ $(echo "$LINE"|cut -d':' -f4-) != ^$tc$ ]] && \
-	[[ $(echo "$LINE"|cut -d':' -f4) =~ ^[[:print:]]*$ ]] && \
-	[[ -z $(echo "$LINE"|cut -d':' -f5) ]] || \
+	[[ $(echo "$LINE"|cut -d':' -f5-) != ^$tc$ ]] && \
+	[[ $(echo "$LINE"|cut -d':' -f4) =~ ^[[:space:]]$ ]] && \
+	[[ $(echo "$LINE"|cut -d':' -f5) =~ ^[[:print:]]*$ ]] || \
  	[[ -z $LINE ]]; then
-		mediainfo_w_names_wo_lang_check=0
+		mediainfo_w_names_wo_lang_ind_check=0
 	else
-		mediainfo_w_names_wo_lang_check=32
+		mediainfo_w_names_wo_lang_ind_check=32
 		break
 	fi
 done < "$chapterold1"
 }
 
-###
-### how to handle each category of chapter mark files
-###
+### handle each category of chapter mark files
 
 function webvtt_convert {
 	while read LINE; do
 		linecount0=$(expr 1 + "$linecount0")
 		if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]]; then
 			linecount1=$(printf '%02d\n' $(expr 1 + "$linecount1"))
-			# print all text following a line $tc until first empty line
-			chaptername=$(cat $chapterold1 |head -n $(expr 4 + $linecount0)|tail -n 4|sed -e '/^$/,$d')
+			# print line following a line containing $tc
+			chaptername=$(cat $chapterold1 |head -n $(expr 1 + $linecount0)|tail -n 1)
 			# write to $chapternew without line break
 			echo -n "CHAPTER$linecount1=" >> "$chapternew"
 			echo "$LINE"|cut -d' ' -f1 >> "$chapternew"
@@ -291,7 +303,7 @@ function eac3to_convert {
 	done < "$chapterold1"
 }
 
-function mediainfo_wo_names_convert {
+function mediainfo_wo_named_chapters_convert {
 	while read LINE; do
 		if [[ -n $LINE ]]; then
 			# count linenumbers
@@ -310,7 +322,7 @@ function mediainfo_wo_names_convert {
 	done < "$chapterold1"
 }
 
-function mediainfo_w_names_a_lang_convert {
+function mediainfo_w_names_w_lang_ind_convert {
 	while read LINE; do
 		if [[ -n $LINE ]]; then
 			# count linenumbers
@@ -331,7 +343,7 @@ function mediainfo_w_names_a_lang_convert {
 	done < "$chapterold1"
 }
 
-function mediainfo_w_names_wo_lang_convert {
+function mediainfo_w_names_wo_lang_ind_convert {
 	while read LINE; do
 		if [[ -n $LINE ]]; then
 			# count linenumbers
@@ -347,24 +359,21 @@ function mediainfo_w_names_wo_lang_convert {
 			# append 'NAME=' to previous written line, no line break
 			echo -n "NAME=" >> "$chapternew"
 			# append chapter name to that line (all from field 5ff)
-			echo "$LINE"|cut -d':' -f4- >> "$chapternew"
+			echo "$LINE"|cut -d':' -f5- >> "$chapternew"
 		fi
 	done < "$chapterold1"
 }
-###
+
 ### execute detection
-###
 
 webvtt_detect
 mp4_detect
 eac3to_detect
-mediainfo_wo_names_detect
-mediainfo_w_names_a_lang_detect
-mediainfo_w_names_wo_lang_detect
+mediainfo_wo_named_chapters_detect
+mediainfo_w_names_w_lang_ind_detect
+mediainfo_w_names_wo_lang_ind_detect
 
-###
 ### execute conversion
-###
 
 # webvtt
 if [[ $webvtt_check -eq 0 ]]; then
@@ -379,26 +388,25 @@ elif [[ $eac3to_check -eq 0 ]]; then
 	eac3to_convert
 
 # mediainfo_wo_names
-elif [[ $mediainfo_wo_names_check -eq 0 ]]; then
-	mediainfo_wo_names_convert
+elif [[ $mediainfo_wo_named_chapters_check -eq 0 ]]; then
+	mediainfo_wo_named_chapters_convert
 
-# mediainfo_w_names_a_lang
-elif [[ $mediainfo_w_names_a_lang_check -eq 0 ]]; then
-	mediainfo_w_names_a_lang_convert
+# mediainfo_w_names_w_lang
+elif [[ $mediainfo_w_names_w_lang_ind_check -eq 0 ]]; then
+	mediainfo_w_names_w_lang_ind_convert
 
 # mediainfo_w_names_wo_lang
-elif [[ $mediainfo_w_names_wo_lang_check -eq 0 ]]; then
-	mediainfo_w_names_wo_lang_convert
+elif [[ $mediainfo_w_names_wo_lang_ind_check -eq 0 ]]; then
+	mediainfo_w_names_wo_lang_ind_convert
 
 # none of the above
-elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo eac3to_check) -gt 0 && $(echo $mediainfo_wo_names_check) -gt 0 && $(echo $mediainfo_w_names_a_lang_check) -gt 0 && $(echo $mediainfo_w_names_wo_lang_check) -gt 0 ]]; then
-	error=$( expr $webvtt_check + $mp4_check + $eac3to_check + $mediainfo_wo_names_check + $mediainfo_w_names_a_lang_check + $mediainfo_w_names_wo_lang_check )
+elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo eac3to_check) -gt 0 && $(echo $mediainfo_wo_named_chapters_check) -gt 0 && $(echo $mediainfo_w_names_w_lang_ind_check) -gt 0 && $(echo $mediainfo_w_names_wo_lang_ind_check) -gt 0 ]]; then
+	error=$( expr $webvtt_check + $mp4_check + $eac3to_check + $mediainfo_wo_named_chapters_check + $mediainfo_w_names_w_lang_ind_check + $mediainfo_w_names_wo_lang_ind_check )
 	echo "$chapterold seems not to be a valid chapter mark file."
 	echo "error code: $error."
 	echo "please PM @derpolsper and send your chapter file and error code. thanks!"
 else
 	echo "huh? surprise."
-	echo "please PM @derpolsper and send your chapter file. thanks!"
 fi
 
 # delete the original's copy
