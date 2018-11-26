@@ -27,17 +27,17 @@ mediainfo_w_names_wo_lang_ind_check=""
 
 # $3 indicates filenames with spaces
 if [[ $3 ]]; then
-	echo -e "\nlooks like you chose a file name with spaces."
-	echo "either avoid spaces or (double) quote:"
+	echo -e "\nLooks like you chose a file name with spaces."
+	echo "Either avoid spaces or (double) quote:"
 	echo -e "\"file name\" or 'file name'\n"
-	echo -e "now, no quotes neccessary\n"
+	echo -e "Now, no quotes neccessary.\n"
 
 	until [[ -e $chapterold ]]; do
-		echo "input file with chapter information"
+		echo "Input file with chapter information."
 		read -e -p "> " chapterold
 	done
 	until [[ $chapternew =~ [A-Za-z0-9] ]]; do
-		echo -e "\ninput new chapter file"
+		echo -e "\nInput new chapter file."
 		read -e -p "> " chapternew
 	done
 fi
@@ -49,17 +49,17 @@ if [[ -e $1 ]] && [[ $2 =~ [A-Za-z0-9] ]]; then
 	chapternew=$2
 elif [[ ! -e $1 ]]; then
 	until [[ -e $chapterold ]]; do
-		echo -e "\ninput file with chapter information"
+		echo -e "\nInput file with chapter information."
 		read -e -p "> " chapterold
 	done
 	until [[ $chapternew =~ [A-Za-z0-9] ]]; do
-		echo -e "\ninput new chapter file"
+		echo -e "\nInput new chapter file."
 		read -e -p "> " chapternew
 	done
 elif [[ -z $2 ]]; then
 	chapterold=$1
 	until [[ $chapternew =~ [A-Za-z0-9] ]]; do
-		echo -e "\ninput new chapter file"
+		echo -e "\nInput new chapter file."
 		read -e -p "> " chapternew
 	done
 fi
@@ -73,7 +73,7 @@ if [[ -e $chapternew ]]; then
 			case $overwrite in
 				n|N)
 					until [[ ! -e $chapternew ]]; do
-						echo -e "\nnew chapter file"
+						echo -e "\nInput new chapter file."
 						read -e -p "> " chapternew
 					done
 					;;
@@ -402,11 +402,11 @@ elif [[ $mediainfo_w_names_wo_lang_ind_check -eq 0 ]]; then
 # none of the above
 elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo eac3to_check) -gt 0 && $(echo $mediainfo_wo_named_chapters_check) -gt 0 && $(echo $mediainfo_w_names_w_lang_ind_check) -gt 0 && $(echo $mediainfo_w_names_wo_lang_ind_check) -gt 0 ]]; then
 	error=$( expr $webvtt_check + $mp4_check + $eac3to_check + $mediainfo_wo_named_chapters_check + $mediainfo_w_names_w_lang_ind_check + $mediainfo_w_names_wo_lang_ind_check )
-	echo "$chapterold seems not to be a valid chapter mark file."
-	echo "error code: $error."
-	echo "please PM @derpolsper and send your chapter file and error code. thanks!"
+	echo "Either there is nothing to do here, or $chapterold seems not to be a valid chapter mark file."
+	echo "Error code: $error."
+	echo "Please PM @derpolsper and send your chapter file and error code. Thanks!"
 else
-	echo "huh? surprise."
+	echo "Huh? Surprise."
 fi
 
 # delete the original's copy
