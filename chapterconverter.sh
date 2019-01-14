@@ -242,22 +242,22 @@ function mediainfo_w_names_colon_wo_lang_ind_detect {
 # each line from mediainfo chapter mark with chapter names but without language
 # indicator begins with a time code an ends with some not-time code at end of line,
 # which is interpreted as chapter name given, like:
-#00:00:00.000 : Program Start
-#00:00:32.824 : 'The Gospel Truth'
-#00:02:28.690 : Festivities on Mt. Olympus
-#00:05:16.566 : Hades
+# 00:00:00.000 : Program Start
+# 00:00:32.824 : 'The Gospel Truth'
+# 00:02:28.690 : Festivities on Mt. Olympus
+# 00:05:16.566 : Hades
 
 while read LINE; do
 	# break, if $LINE does not begin with tc, does not contain space
 	#
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
 	[[ $(echo "$LINE"|cut -d' ' -f3-) != ^$tc$ ]] && \
-	[[ $(echo "$LINE"|cut -d' ' -f2) =~ ^[[:space:]]$ ]] && \
-	[[ $(echo "$LINE"|cut -d' ' -f3) =~ ^[[:print:]]*$ ]] || \
+	#[[ $(echo "$LINE"|cut -d':' -f3) =~ ^[[:space:]]$ ]] && \
+	[[ $(echo "$LINE"|cut -d' ' -f3-) =~ ^[[:print:]]*$ ]] || \
  	[[ -z $LINE ]]; then
-		mediainfo_w_names_doublecolon_wo_lang_ind_check=0
+		mediainfo_w_names_colon_wo_lang_ind_check=0
 	else
-		mediainfo_w_names_doublecolon_wo_lang_ind_check=64
+		mediainfo_w_names_colon_wo_lang_ind_check=64
 		break
 	fi
 done < "$chapterold1"
@@ -408,7 +408,7 @@ function mediainfo_w_names_colon_wo_lang_ind_convert {
 			# append 'NAME=' to previous written line, no line break
 			echo -n "NAME=" >> "$chapternew"
 			# append chapter name to that line (all from field 5ff)
-			echo "$LINE"|cut -d' ' -f2- >> "$chapternew"
+			echo "$LINE"|cut -d' ' -f3- >> "$chapternew"
 		fi
 	done < "$chapterold1"
 }
@@ -454,7 +454,7 @@ elif [[ $mediainfo_w_names_colon_wo_lang_ind_check -eq 0 ]]; then
 	mediainfo_w_names_colon_wo_lang_ind_convert
 
 # none of the above
-elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo eac3to_check) -gt 0 && $(echo $mediainfo_wo_named_chapters_check) -gt 0 && $(echo $mediainfo_w_names_w_lang_ind_check) -gt 0 && $(echo $mediainfo_w_names_doublecolon_wo_lang_ind_check) -gt 0 ]] && $(echo $mediainfo_w_names_colon_wo_lang_ind_check) -gt 0 ]]; then
+elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo $eac3to_check) -gt 0 && $(echo $mediainfo_wo_named_chapters_check) -gt 0 && $(echo $mediainfo_w_names_w_lang_ind_check) -gt 0 && $(echo $mediainfo_w_names_doublecolon_wo_lang_ind_check) -gt 0 && $(echo $mediainfo_w_names_colon_wo_lang_ind_check) -gt 0 ]]; then
 	error=$( expr $webvtt_check + $mp4_check + $eac3to_check + $mediainfo_wo_named_chapters_check + $mediainfo_w_names_w_lang_ind_check + $mediainfo_w_names_doublecolon_wo_lang_ind_check + $mediainfo_w_names_colon_wo_lang_ind_check)
 	echo "Either there is nothing to do here, or $chapterold seems not to be a valid chapter mark file."
 	echo "Error code: $error."
