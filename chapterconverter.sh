@@ -110,6 +110,7 @@ function webvtt_detect {
 # 00:00:01.000 --> 00:00:05.000
 # Prologue
 
+# break if first line does not contain expression "WEBVTT"
 if [[ -n $(cat $chapterold1 | head -n 1 | grep -e WEBVTT) ]]; then
 	webvtt_check=0
 else
@@ -164,7 +165,6 @@ while read LINE; do
 	[[ $(echo "$LINE"|cut -d'=' -f2) =~ $tc$ ]] || [[ $(echo "$LINE") =~ NAME=$ ]] || [[ -z $LINE ]]; then
 		eac3to_check=0
 	else
-		echo "$LINE"
 		eac3to_check=4
 		break
 	fi
@@ -179,7 +179,8 @@ function mediainfo_wo_named_chapters_detect {
 # no time code at end of line is interpreted as chapter name given
 
 while read LINE; do
-	# break if non-empty $LINE does not begin with tc and does not end with tc
+	# break if non-empty $LINE does not begin with timecode
+	# and does not end with timecode
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
 	[[ $(echo "$LINE"|cut -d' ' -f1) == $(echo "$LINE"|cut -d':' -f5-) ]] || \
 	[[ -z $LINE ]]; then
@@ -193,13 +194,15 @@ done < "$chapterold1"
 
 function mediainfo_w_names_w_lang_ind_detect {
 # each line from mediainfo chapter mark with chapter names and language
-# indicator begins with a time code and ends with some not-time code:
+# indicator begins with a time code and ends with some not-timecode:
 # 00:00:00.000 : en:01. Imperial Orders
 # 00:08:57.454 : en:02. Family Ambitions
 
 # no time code at end of line is interpreted as chapter name given
 while read LINE; do
-	# break, if $LINE does not begin with tc, does not contain space
+	# break, if $LINE does not begin with tc, ends with timecode,
+	# does not contain space, does not contain a two letter language
+	# indicator, does only show nonprintable signs
 	#
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
 	[[ $(echo "$LINE"|cut -d':' -f5-) != ^$tc$ ]] && \
@@ -223,7 +226,9 @@ function mediainfo_w_names_doublecolon_wo_lang_ind_detect {
 # 00:12:44.514 : :New York City
 
 while read LINE; do
-	# break, if $LINE does not begin with tc, does not contain space
+	# break, if $LINE does not begin with timecode, ends with timecode
+	# does contain anything but spaces between 3. and 4. colon
+	# does only show nonprintable signs after 5. colon
 	#
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
 	[[ $(echo "$LINE"|cut -d':' -f5-) != ^$tc$ ]] && \
@@ -248,11 +253,13 @@ function mediainfo_w_names_colon_wo_lang_ind_detect {
 # 00:05:16.566 : Hades
 
 while read LINE; do
-	# break, if $LINE does not begin with tc, does not contain space
+	# break, if $LINE does not begin with timecode, does end with timecode
+	# 
+	# does only show nonprintable signs after 3. space
 	#
 	if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]] && \
 	[[ $(echo "$LINE"|cut -d' ' -f3-) != ^$tc$ ]] && \
-	#[[ $(echo "$LINE"|cut -d':' -f3) =~ ^[[:space:]]$ ]] && \
+	[[ $(echo "$LINE"|cut -d' ' -f2) =~ ^:$ ]] && \
 	[[ $(echo "$LINE"|cut -d' ' -f3-) =~ ^[[:print:]]*$ ]] || \
  	[[ -z $LINE ]]; then
 		mediainfo_w_names_colon_wo_lang_ind_check=0
@@ -455,12 +462,11 @@ elif [[ $mediainfo_w_names_colon_wo_lang_ind_check -eq 0 ]]; then
 
 # none of the above
 elif [[ $(echo $webvtt_check) -gt 0 && $(echo $mp4_check) -gt 0 && $(echo $eac3to_check) -gt 0 && $(echo $mediainfo_wo_named_chapters_check) -gt 0 && $(echo $mediainfo_w_names_w_lang_ind_check) -gt 0 && $(echo $mediainfo_w_names_doublecolon_wo_lang_ind_check) -gt 0 && $(echo $mediainfo_w_names_colon_wo_lang_ind_check) -gt 0 ]]; then
-	error=$( expr $webvtt_check + $mp4_check + $eac3to_check + $mediainfo_wo_named_chapters_check + $mediainfo_w_names_w_lang_ind_check + $mediainfo_w_names_doublecolon_wo_lang_ind_check + $mediainfo_w_names_colon_wo_lang_ind_check)
 	echo "Either there is nothing to do here, or $chapterold seems not to be a valid chapter mark file."
-	echo "Error code: $error."
-	echo "Please PM @derpolsper and send your chapter file and error code. Thanks!"
+	echo "Please PM @derpolsper and send your chapter file. Thanks!"
 else
 	echo "Huh? Surprise."
+    echo "Please PM @derpolsper and send your chapter file. Thanks!"
 fi
 
 # delete the original's copy
