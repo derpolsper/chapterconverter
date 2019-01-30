@@ -58,7 +58,7 @@ elif [[ ! -e $1 ]]; then
 		read -e -p "> " chapternew
 	done
 elif [[ -z $2 ]]; then
-	chapterold=$1
+	chapterold="$1"
 	until [[ $chapternew =~ [A-Za-z0-9] ]]; do
 		echo -e "\nInput new chapter file."
 		read -e -p "> " chapternew
@@ -67,7 +67,7 @@ fi
 
 # check if $chapternew exists
 if [[ -e $chapternew ]]; then
-	echo -e "\n$chapternew already exists. Overwrite?"
+	echo -e "\n"$chapternew" already exists. Overwrite?"
 	# go on when suitable answer is given
 	until [[ $overwrite == @(n|N|y|Y) ]]; do
 		read -e -p "y|n > " overwrite
@@ -111,7 +111,7 @@ function webvtt_detect {
 # Prologue
 
 # break if first line does not contain expression "WEBVTT"
-if [[ -n $(cat $chapterold1 | head -n 1 | grep -e WEBVTT) ]]; then
+if [[ -n $(cat "$chapterold1" | head -n 1 | grep -e WEBVTT) ]]; then
 	webvtt_check=0
 else
 	webvtt_check=1
@@ -278,7 +278,7 @@ function webvtt_convert {
 		if [[ $(echo "$LINE"|cut -d' ' -f1) =~ ^$tc$ ]]; then
 			linecount1=$(printf '%02d\n' $(expr 1 + "$linecount1"))
 			# print line following a line containing $tc
-			chaptername=$(cat $chapterold1 |head -n $(expr 1 + $linecount0)|tail -n 1)
+			chaptername=$(cat "$chapterold1" |head -n $(expr 1 + $linecount0)|tail -n 1)
 			# write to $chapternew without line break
 			echo -n "CHAPTER$linecount1=" >> "$chapternew"
 			echo "$LINE"|cut -d' ' -f1 >> "$chapternew"
